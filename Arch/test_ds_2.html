@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IFRS 10: Консолидация</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .input-section, .output-section {
+            flex: 1;
+            min-width: 300px;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .chart-container {
+            width: 100%;
+            max-width: 600px;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>IFRS 10: Консолидированная отчетность</h1>
+    <div class="container">
+        <div class="input-section">
+            <h2>Ввод данных</h2>
+            <label for="investment">Инвестиции материнской компании ($):</label>
+            <input type="number" id="investment" value="1000000"><br><br>
+
+            <label for="netAssets">Чистые активы дочерней компании ($):</label>
+            <input type="number" id="netAssets" value="800000"><br><br>
+
+            <label for="ownership">Доля владения (%):</label>
+            <input type="number" id="ownership" value="80"><br><br>
+
+            <label for="fairValue">Справедливая стоимость активов ($):</label>
+            <input type="number" id="fairValue" value="850000"><br><br>
+
+            <button onclick="calculate()">Рассчитать</button>
+        </div>
+
+        <div class="output-section">
+            <h2>Результаты</h2>
+            <div id="results"></div>
+            <div class="chart-container">
+                <canvas id="consolidationChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function calculate() {
+            // Получение входных данных
+            const investment = parseFloat(document.getElementById('investment').value);
+            const netAssets = parseFloat(document.getElementById('netAssets').value);
+            const ownership = parseFloat(document.getElementById('ownership').value) / 100;
+            const fairValue = parseFloat(document.getElementById('fairValue').value);
+
+            // Расчеты
+            const goodwill = investment - (fairValue * ownership);
+            const nci = fairValue * (1 - ownership);
+            const totalAssets = fairValue + Math.max(goodwill, 0);
+
+            // Вывод результатов
+            const resultsHTML = `
+                <h3>Расчет гудвила и NCI</h3>
+                <table>
+                    <tr>
+                        <th>Показатель</th>
+                        <th>Сумма ($)</th>
+                    </tr>
+                    <tr>
+                        <td>Гудвил (Goodwill)</td>
+                        <td>${goodwill.toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                        <td>Неконтролирующая доля (NCI)</td>
+                        <td>${nci.toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                        <td>Идентифицируемые активы</td>
+                        <td>${fairValue.toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Итого активы</strong></td>
+                        <td><strong>${totalAssets.toFixed(2)}</strong></td>
+                    </tr>
+                </table>
+            `;
+            document.getElementById('results').innerHTML = resultsHTML;
+
+            // Визуализация (Chart.js)
+            const ctx = document.getElementById('consolidationChart').getContext('2d');
+            if (window.consolidationChart) {
+                window.consolidationChart.destroy();
+            }
+            window.consolidationChart = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: ['Гудвил', 'Неконтролирующая доля', 'Идентифицируемые активы'],
+                    datasets: [{
+                        data: [Math.max(goodwill, 0), nci, fairValue],
+                        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Структура консолидированных активов'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Первоначальный расчет при загрузке
+        window.onload = calculate;
+    </script>
+</body>
+</html>

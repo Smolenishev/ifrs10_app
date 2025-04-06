@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IFRS 10: Профессиональная консолидация</title>
+    <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f5f7fa;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .input-section, .output-section {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+            border-left: 4px solid #3b82f6;
+        }
+
+        .subsidiary {
+            border: 1px solid #e2e8f0;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            position: relative;
+            background: #f8fafc;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+
+        th, td {
+            border: 1px solid #e2e8f0;
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f1f5f9;
+            font-weight: 600;
+        }
+
+        button {
+            background-color: #3b82f6;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 10px 5px;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        .control-checkboxes {
+            margin: 15px 0;
+            padding: 15px;
+            background: #f0f9ff;
+            border-radius: 6px;
+            border: 1px solid #bfdbfe;
+        }
+
+        .impairment-section {
+            margin: 25px 0;
+            padding: 20px;
+            border: 2px dashed #f59e0b;
+            background: #fffbeb;
+            border-radius: 8px;
+        }
+
+        .negative { color: #dc2626; }
+        .positive { color: #16a34a; }
+        .warning {
+            background: #fef3c7;
+            padding: 15px;
+            border-left: 4px solid #f59e0b;
+            margin: 15px 0;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0 15px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 25px;
+            background: #f1f5f9;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        @media (max-width: 768px) {
+            body { margin: 10px; }
+            .input-section, .output-section {
+                padding: 15px;
+            }
+            button {
+                width: 100%;
+                margin: 5px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <h1>IFRS 10: Профессиональная консолидация</h1>
+    
+    <div style="text-align: center; margin-bottom: 20px;">
+        <button onclick="addSubsidiary()">+ Добавить компанию</button>
+        <button onclick="calculate()">Рассчитать</button>
+        <button onclick="exportToExcel()">Экспорт Excel</button>
+        <button onclick="generateReport()">Отчет</button>
+    </div>
+
+    <div class="container">
+        <!-- Секция ввода данных -->
+        <div class="input-section">
+            <h2>Ввод данных</h2>
+            <div id="subsidiaries">
+                <div class="subsidiary" id="subsidiary1">
+                    <h3>Дочерняя компания 1</h3>
+                    <button onclick="removeSubsidiary(1)" class="danger">Удалить</button>
+                    <label>Название: <input type="text" id="name1" value="Компания 1"></label>
+                    <label>Инвестиции (млн.руб.): <input type="number" step="0.01" id="investment1" value="1.00"></label>
+                    <label>Справедливая стоимость: <input type="number" step="0.01" id="fairValue1" value="0.85"></label>
+                    <label>Чистые активы: <input type="number" step="0.01" id="netAssets1" value="0.80"></label>
+                    <label>Обязательства: <input type="number" step="0.01" id="liabilities1" value="0.00"></label>
+                    <label>Доля владения (%): <input type="number" id="ownership1" value="80"></label>
+                    <label>Метод NCI: 
+                        <select id="nciMethod1">
+                            <option value="proportional">Пропорциональный</option>
+                            <option value="full">Полная стоимость</option>
+                        </select>
+                    </label>
+                    <div class="control-checkboxes">
+                        <label><input type="checkbox" id="power1" checked> Право управления</label>
+                        <label><input type="checkbox" id="returns1" checked> Получение доходов</label>
+                        <label><input type="checkbox" id="linkage1" checked> Влияние на доход</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="impairment-section">
+                <h3>Обесценение гудвила</h3>
+                <label>Убыток: <input type="number" step="0.01" id="impairmentLoss" value="0"></label>
+                <button onclick="applyImpairment()">Применить</button>
+            </div>
+        </div>
+
+        <!-- Секция результатов -->
+        <div class="output-section">
+            <h2>Результаты консолидации</h2>
+            <div id="consolidationResults"></div>
+            <div id="detailsResults"></div>
+            <div id="controlAnalysis"></div>
+            <div id="goodwillAnalysis"></div>
+            
+            <div class="section">
+                <h3>Источники</h3>
+                <ul>
+                    <li><a href="https://www.ifrs.org/ifrs-10/" target="_blank">IFRS 10 Official Documentation</a></li>
+                    <li><a href="https://www.iasplus.com/ru/standards/ifrs/ifrs10" target="_blank">IAS Plus: IFRS 10</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2023 Консолидация IFRS 10. Инструмент для профессиональной отчетности.</p>
+        <p>По вопросам: <a href="mailto:support@ifrs-tool.com">support@ifrs-tool.com</a></p>
+    </footer>
+
+    <script>
+        let subsidiaryCount = 1;
+        let consolidationData = [];
+        let goodwillImpairment = 0;
+
+        function addSubsidiary() {
+            subsidiaryCount++;
+            const subsidiaryHTML = `
+                <div class="subsidiary" id="subsidiary${subsidiaryCount}">
+                    <h3>Дочерняя компания ${subsidiaryCount}</h3>
+                    <button onclick="removeSubsidiary(${subsidiaryCount})" class="danger">Удалить</button>
+                    <label>Название: <input type="text" id="name${subsidiaryCount}" value="Компания ${subsidiaryCount}"></label>
+                    <label>Инвестиции: <input type="number" step="0.01" id="investment${subsidiaryCount}" value="0.50"></label>
+                    <label>Справедливая стоимость: <input type="number" step="0.01" id="fairValue${subsidiaryCount}" value="0.45"></label>
+                    <label>Чистые активы: <input type="number" step="0.01" id="netAssets${subsidiaryCount}" value="0.40"></label>
+                    <label>Обязательства: <input type="number" step="0.01" id="liabilities${subsidiaryCount}" value="0.05"></label>
+                    <label>Доля владения (%): <input type="number" id="ownership${subsidiaryCount}" value="60"></label>
+                    <label>Метод NCI: 
+                        <select id="nciMethod${subsidiaryCount}">
+                            <option value="proportional">Пропорциональный</option>
+                            <option value="full">Полная стоимость</option>
+                        </select>
+                    </label>
+                    <div class="control-checkboxes">
+                        <label><input type="checkbox" id="power${subsidiaryCount}" checked> Право управления</label>
+                        <label><input type="checkbox" id="returns${subsidiaryCount}" checked> Получение доходов</label>
+                        <label><input type="checkbox" id="linkage${subsidiaryCount}" checked> Влияние на доход</label>
+                    </div>
+                </div>`;
+            document.getElementById('subsidiaries').insertAdjacentHTML('beforeend', subsidiaryHTML);
+        }
+
+        function removeSubsidiary(id) {
+            if (subsidiaryCount <= 1) return alert("Нельзя удалить последнюю компанию!");
+            document.getElementById(`subsidiary${id}`).remove();
+            subsidiaryCount--;
+        }
+
+        function calculate() {
+            consolidationData = [];
+            let total = { goodwill: 0, nci: 0, fairValue: 0, investment: 0 };
+            let detailsHTML = `<table><tr><th>Компания</th><th>Инвестиции</th><th>Доля</th><th>Активы</th><th>Гудвил</th><th>NCI</th></tr>`;
+            
+            for (let i = 1; i <= subsidiaryCount; i++) {
+                const elem = document.getElementById(`subsidiary${i}`);
+                if (!elem) continue;
+
+                const getValue = id => parseFloat(document.getElementById(id+i).value) || 0;
+                const ownership = getValue('ownership') / 100;
+                const investment = getValue('investment');
+                const fairValue = getValue('fairValue');
+                const goodwill = investment - (fairValue * ownership);
+                const nciMethod = document.getElementById(`nciMethod${i}`).value;
+                const nci = nciMethod === 'full' ? 
+                    (fairValue + Math.max(goodwill, 0)) * (1 - ownership) : 
+                    fairValue * (1 - ownership);
+
+                consolidationData.push({
+                    name: document.getElementById(`name${i}`).value,
+                    investment,
+                    ownership: ownership * 100,
+                    fairValue,
+                    goodwill,
+                    nci
+                });
+
+                total.goodwill += goodwill;
+                total.nci += nci;
+                total.fairValue += fairValue;
+                total.investment += investment;
+
+                detailsHTML += `<tr>
+                    <td>${consolidationData[i-1].name}</td>
+                    <td>${investment.toFixed(2)}</td>
+                    <td>${(ownership*100).toFixed(1)}%</td>
+                    <td>${fairValue.toFixed(2)}</td>
+                    <td class="${goodwill < 0 ? 'negative' : 'positive'}">${goodwill.toFixed(2)}</td>
+                    <td>${nci.toFixed(2)}</td>
+                </tr>`;
+            }
+
+            detailsHTML += `</table>`;
+            document.getElementById('detailsResults').innerHTML = detailsHTML;
+
+            document.getElementById('consolidationResults').innerHTML = `
+                <h3>Итоговые показатели</h3>
+                <table>
+                    <tr><th>Показатель</th><th>Значение</th></tr>
+                    <tr><td>Совокупные инвестиции</td><td>${total.investment.toFixed(2)}</td></tr>
+                    <tr><td>Общая справедливая стоимость</td><td>${total.fairValue.toFixed(2)}</td></tr>
+                    <tr><td>Совокупный гудвил</td><td class="${total.goodwill < 0 ? 'negative' : 'positive'}">${total.goodwill.toFixed(2)}</td></tr>
+                    <tr><td>Итого NCI</td><td>${total.nci.toFixed(2)}</td></tr>
+                </table>`;
+        }
+
+        function applyImpairment() {
+            goodwillImpairment = parseFloat(document.getElementById('impairmentLoss').value) || 0;
+            alert(`Убыток ${goodwillImpairment.toFixed(2)} применен!`);
+        }
+
+        function exportToExcel() {
+            const ws = XLSX.utils.json_to_sheet(consolidationData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Данные");
+            XLSX.writeFile(wb, "Консолидация.xlsx");
+        }
+
+        function generateReport() {
+            const win = window.open('', '_blank');
+            win.document.write(`<html><head><title>Отчет</title></head><body>
+                ${document.getElementById('consolidationResults').innerHTML}
+                ${document.getElementById('detailsResults').innerHTML}
+                <p>Сгенерировано: ${new Date().toLocaleString()}</p>
+            </body></html>`);
+            win.document.close();
+        }
+
+        window.onload = calculate;
+    </script>
+</body>
+</html>
